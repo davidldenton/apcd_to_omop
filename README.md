@@ -1,4 +1,4 @@
-OMOP Common Data Model / SQL Server DDL Scripts
+OMOP Common Data Model / SQL Server Scripts
 =================
 
 This folder contains the DDL for the OMOP CDM on SQL Server. 
