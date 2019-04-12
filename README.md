@@ -4,8 +4,7 @@ OMOP Common Data Model / SQL Server Scripts
 This folder contains the DDL for the OMOP CDM on SQL Server. 
 
 1. Create a case-sensitive database named 'APCD'.
-   
-   Collation = SQL_Latin1_General_CP1_CS_AS
+   - Collation = SQL_Latin1_General_CP1_CS_AS
 
 2. Create an empty schema named 'cdm'.
 
