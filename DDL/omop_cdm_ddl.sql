@@ -27,9 +27,7 @@
 
 sql server script to create OMOP common data model version 6.0
 
-last revised: 27-Aug-2018
-
-Authors:  Patrick Ryan, Christian Reich, Clair Blacketer
+last revised: 2018-04-12
 
 
 *************************/

@@ -78,9 +78,9 @@ ALTER TABLE cdm.relationship ADD CONSTRAINT fpk_relationship_concept FOREIGN KEY
 
 ALTER TABLE cdm.relationship ADD CONSTRAINT fpk_relationship_reverse FOREIGN KEY (reverse_relationship_id)  REFERENCES cdm.relationship (relationship_id);
 
-ALTER TABLE cdm.concept_synonym ADD CONSTRAINT fpk_concept_synonym_concept FOREIGN KEY (concept_id)  REFERENCES cdm.concept (concept_id);
+ALTER TABLE cdm.concept_synonym ADD CONSTRAINT fpk_concept_synonym_concept01 FOREIGN KEY (concept_id)  REFERENCES cdm.concept (concept_id);
 
-ALTER TABLE cdm.concept_synonym ADD CONSTRAINT fpk_concept_synonym_concept FOREIGN KEY (language_concept_id)  REFERENCES cdm.concept (concept_id);
+ALTER TABLE cdm.concept_synonym ADD CONSTRAINT fpk_concept_synonym_concept02 FOREIGN KEY (language_concept_id)  REFERENCES cdm.concept (concept_id);
 
 ALTER TABLE cdm.concept_ancestor ADD CONSTRAINT fpk_concept_ancestor_concept_1 FOREIGN KEY (ancestor_concept_id)  REFERENCES cdm.concept (concept_id);
 

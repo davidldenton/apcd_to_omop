@@ -35,17 +35,15 @@ Notes
 3) If you unzipped your CDM version 5 vocabulary files into a different directory then replace all file paths below, with your directory path.
 4) Run this SQL query script in the database where you created your CDM Version 5 tables
 
-last revised: 26 Nov 2014
-
-author:  Lee Evans
+last revised: 2018-04-12
 
 
 *************************/
 
 USE APCD;
 
-TRUNCATE TABLE cdm.DRUG_STRENGTH;
-BULK INSERT cdm.DRUG_STRENGTH 
+TRUNCATE TABLE cdm.drug_strength;
+BULK INSERT cdm.drug_strength 
 FROM 'D:\projects\omop_cdm\vocab\DRUG_STRENGTH.csv' 
 WITH (
 FIRSTROW = 2,
@@ -55,8 +53,8 @@ ERRORFILE = 'D:\projects\omop_cdm\vocab\DRUG_STRENGTH.bad',
 TABLOCK
 );
 
-TRUNCATE TABLE cdm.CONCEPT;
-BULK INSERT cdm.CONCEPT 
+TRUNCATE TABLE cdm.concept;
+BULK INSERT cdm.concept 
 FROM 'D:\projects\omop_cdm\vocab\CONCEPT.csv' 
 WITH (
 FIRSTROW = 2,
@@ -66,8 +64,8 @@ ERRORFILE = 'D:\projects\omop_cdm\vocab\CONCEPT.bad',
 TABLOCK
 );
 
-TRUNCATE TABLE cdm.CONCEPT_RELATIONSHIP;
-BULK INSERT cdm.CONCEPT_RELATIONSHIP 
+TRUNCATE TABLE cdm.concept_relationship;
+BULK INSERT cdm.concept_relationship 
 FROM 'D:\projects\omop_cdm\vocab\CONCEPT_RELATIONSHIP.csv' 
 WITH (
 FIRSTROW = 2,
@@ -77,8 +75,8 @@ ERRORFILE = 'D:\projects\omop_cdm\vocab\CONCEPT_RELATIONSHIP.bad',
 TABLOCK
 );
 
-TRUNCATE TABLE cdm.CONCEPT_ANCESTOR;
-BULK INSERT cdm.CONCEPT_ANCESTOR 
+TRUNCATE TABLE cdm.concept_ancestor;
+BULK INSERT cdm.concept_ancestor 
 FROM 'D:\projects\omop_cdm\vocab\CONCEPT_ANCESTOR.csv' 
 WITH (
 FIRSTROW = 2,
@@ -88,8 +86,8 @@ ERRORFILE = 'D:\projects\omop_cdm\vocab\CONCEPT_ANCESTOR.bad',
 TABLOCK
 );
 
-TRUNCATE TABLE cdm.CONCEPT_SYNONYM;
-BULK INSERT cdm.CONCEPT_SYNONYM 
+TRUNCATE TABLE cdm.concept_synonym;
+BULK INSERT cdm.concept_synonym 
 FROM 'D:\projects\omop_cdm\vocab\CONCEPT_SYNONYM.csv' 
 WITH (
 FIRSTROW = 2,
@@ -99,8 +97,8 @@ ERRORFILE = 'D:\projects\omop_cdm\vocab\CONCEPT_SYNONYM.bad',
 TABLOCK
 );
 
-TRUNCATE TABLE cdm.VOCABULARY;
-BULK INSERT cdm.VOCABULARY 
+TRUNCATE TABLE cdm.vocabulary;
+BULK INSERT cdm.vocabulary 
 FROM 'D:\projects\omop_cdm\vocab\VOCABULARY.csv' 
 WITH (
 FIRSTROW = 2,
@@ -110,8 +108,8 @@ ERRORFILE = 'D:\projects\omop_cdm\vocab\VOCABULARY.bad',
 TABLOCK
 );
 
-TRUNCATE TABLE cdm.RELATIONSHIP;
-BULK INSERT cdm.RELATIONSHIP 
+TRUNCATE TABLE cdm.relationship;
+BULK INSERT cdm.relationship 
 FROM 'D:\projects\omop_cdm\vocab\RELATIONSHIP.csv' 
 WITH (
 FIRSTROW = 2,
@@ -121,8 +119,8 @@ ERRORFILE = 'D:\projects\omop_cdm\vocab\RELATIONSHIP.bad',
 TABLOCK
 );
 
-TRUNCATE TABLE cdm.CONCEPT_CLASS;
-BULK INSERT cdm.CONCEPT_CLASS 
+TRUNCATE TABLE cdm.concept_class;
+BULK INSERT cdm.concept_class 
 FROM 'D:\projects\omop_cdm\vocab\CONCEPT_CLASS.csv' 
 WITH (
 FIRSTROW = 2,
@@ -132,8 +130,8 @@ ERRORFILE = 'D:\projects\omop_cdm\vocab\CONCEPT_CLASS.bad',
 TABLOCK
 );
 
-TRUNCATE TABLE cdm.DOMAIN;
-BULK INSERT cdm.DOMAIN 
+TRUNCATE TABLE cdm.domain;
+BULK INSERT cdm.domain 
 FROM 'D:\projects\omop_cdm\vocab\DOMAIN.csv' 
 WITH (
 FIRSTROW = 2,

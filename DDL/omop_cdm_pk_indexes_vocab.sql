@@ -54,6 +54,8 @@ Standardized vocabulary
 
 ************************/
 
+USE APCD;
+
 ALTER TABLE cdm.concept ADD CONSTRAINT xpk_concept PRIMARY KEY NONCLUSTERED (concept_id);
 
 ALTER TABLE cdm.vocabulary ADD CONSTRAINT xpk_vocabulary PRIMARY KEY NONCLUSTERED (vocabulary_id);
