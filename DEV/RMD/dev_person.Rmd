@@ -1,0 +1,224 @@
+---
+title: "Some test SQL queries"
+output: html_document
+---
+
+
+```{sql connection=con}
+-- create source to standard concept mapping table
+WITH VOCAB_MAP AS(
+ SELECT C.CONCEPT_CODE    AS SOURCE_CODE, 
+    C.CONCEPT_ID          AS SOURCE_CONCEPT_ID,
+    C.CONCEPT_NAME        AS SOURCE_CONCEPT_NAME,
+    C.VOCABULARY_ID       AS SOURCE_VOCABULARY_ID,
+    C.DOMAIN_ID           AS SOURCE_DOMAIN_ID,
+    C.VALID_START_DATE    AS SOURCE_VALID_START_DATE,
+    C.VALID_END_DATE      AS SOURCE_VALID_END_DATE,
+    C.INVALID_REASON      AS SOURCE_INVALID_REASON,
+    C1.CONCEPT_ID         AS TARGET_CONCEPT_ID,
+    C1.CONCEPT_NAME       AS TARGET_CONCEPT_NAME,
+    C1.VOCABULARY_ID      AS TARGET_VOCABULARY_ID,
+    C1.DOMAIN_ID          AS TARGET_DOMAIN_ID,
+    C1.CONCEPT_CLASS_ID   AS TARGET_CONCEPT_CLASS_ID,
+    C1.INVALID_REASON     AS TARGET_INVALID_REASON,
+    C1.STANDARD_CONCEPT   AS TARGET_STANDARD_CONCEPT
+  FROM testdb.cdm.CONCEPT C
+    JOIN testdb.cdm.CONCEPT_RELATIONSHIP CR ON C.CONCEPT_ID = CR.CONCEPT_ID_1 AND CR.INVALID_REASON IS NULL AND CR.RELATIONSHIP_ID = 'Maps to'
+    JOIN testdb.cdm.CONCEPT C1 ON CR.CONCEPT_ID_2 = C1.CONCEPT_ID AND C1.INVALID_REASON IS NULL
+  )
+  SELECT * INTO ##VOCAB_MAP 
+  FROM VOCAB_MAP
+  /* EXAMPLE FILTERS */
+  WHERE SOURCE_VOCABULARY_ID IN('ICD9CM', 'ICD10CM') AND TARGET_STANDARD_CONCEPT IN('S')
+
+```
+
+
+# Patient table
+I think the way to do this is to create a few intermediate tables.
+- patkey_zip
+- patkey_gender
+- patkey_birthyear 
+- patkey_pcp (with pcp location)
+
+These fields will be derived from the medical eligibility table. First we will calculate approximate birthyear for each eligibility record. Then we will take the most frequently occuring non-missing value for zipcode, gender, and birthyear.
+Only patients with valid values for all of these variables will be kept.
+
+patkey_pcp has patkey, pcp_npi, pcp_practice_location (might be multiple values)
+
+```{sql connection = con}
+-- select only the most frequently used non missing value for each patkey
+SELECT DISTINCT patkey, mode_pat_zip INTO ##patkey_zip
+FROM(
+  -- calculate the most frequently used value by group
+  SELECT patkey, pat_zip, record_count, 
+   first_value(pat_zip) OVER (PARTITION BY patkey ORDER BY record_count DESC) AS mode_pat_zip
+  FROM (
+    -- count up records grouped by patkey and pat_zip
+    SELECT patkey, pat_zip, 
+    CASE WHEN ((pat_zip IS NULL) OR pat_zip = '') THEN 0 
+         ELSE (COUNT(*) OVER (PARTITION BY patkey, pat_zip)) END AS record_count
+    FROM  cdm.concept
+  ) a
+) b ORDER BY patkey
+```
+
+
+```{sql connection=con}
+-- select only the most frequently used non missing value for each patkey
+SELECT DISTINCT patkey, mode_pat_gender INTO ##patkey_gender
+FROM(
+  -- calculate the most frequently used value by group
+  SELECT patkey, pat_gender, record_count, 
+   first_value(pat_gender) OVER (PARTITION BY patkey ORDER BY record_count DESC) AS mode_pat_gender
+  FROM (
+    -- count up records grouped by patkey and pat_gender
+    SELECT patkey, pat_gender, 
+    CASE WHEN ((pat_gender IS NULL) OR pat_gender = '') THEN 0 
+         ELSE (COUNT(*) OVER (PARTITION BY patkey, pat_gender)) END AS record_count
+    FROM  cdm.concept
+  ) a
+) b ORDER BY patkey
+```
+
+```{sql connection=con}
+SELECT domain_id, vocabulary_id, n, ranks, min(vocabulary_id) OVER(PARTITION BY domain_id ORDER BY vocabulary_id) AS min_vocabulary_id 
+INTO ##tmp_calc
+FROM(
+  SELECT domain_id, vocabulary_id, n, ranks
+  FROM (
+    SELECT domain_id, vocabulary_id, n, rank() OVER (PARTITION BY domain_id ORDER BY n DESC) AS ranks
+    FROM (
+      SELECT domain_id, vocabulary_id, COUNT(*) AS n
+      FROM cdm.concept
+      GROUP BY domain_id, vocabulary_id
+    ) count_tbl
+  ) rank_tbl
+  where ranks <= 2
+) c
+order by domain_id, ranks 
+```
+
+### patkey_birthyear
+```{sql connection=con}
+-- calculate approximate age. Each person should basically have two birthyear values per year and we want the smaller.
+-- we want the smaller of the two most popular birthyears which should be 
+-- select only the most frequently used non missing value for each patkey
+SELECT patkey, birthyear, n, ranks MIN(birthyear) OVER(PARTITION BY patkey ORDER BY birthyear) AS min_birthyear 
+INTO ##tmp_patkey_birthyear
+FROM(
+  SELECT patkey, birthyear, n, ranks
+  FROM(
+    -- calculate the most frequently used value by group
+    SELECT patkey, birthyear, RANK() OVER (PARTITION BY patkey ORDER BY n DESC) AS ranks
+    FROM (
+      -- count up records grouped by patkey and pat_gender
+      SELECT patkey, birthyear, COUNT(*) as n
+      FROM (
+        -- get clean row level birthyear calculation
+        SELECT patkey, year - age as birthyear from apcd.me where age <= 110 and age >= 0 and year >= 2015 and year <= 2017
+      ) birthyear_tbl 
+      GROUP BY  patkey, birthyear
+    ) count_tbl
+  ) rank_tbl 
+  where ranks <= 2
+) two_highest_ranks_tbl
+
+```
+
+```{sql connection=con}
+-- check differences, should be mostly 1s
+SELECT dif, COUNT(*) AS n
+FROM(
+  SELECT max(birthyear) - min(birthyear) as dif from ##tmp_patkey_birthyear
+) tmp
+GROUP BY dif
+ORDER BY n
+
+```
+
+```{sql connection=con}
+SELECT DISTINCT patkey, min_birthyear as birthyear INTO ##patkey_birthyear from ##tmp_patkey_birthyear
+
+```
+
+
+
+
+```{sql connection=con}
+-- select only the most frequently used non missing value for each patkey
+SELECT DISTINCT patkey, mode_pat_gender INTO ##patkey_zip
+FROM(
+  -- calculate the most frequently used value by group
+  SELECT patkey, pat_gender, record_count, 
+   first_value(pat_gender) OVER (PARTITION BY patkey ORDER BY record_count DESC) AS mode_pat_gender
+  FROM (
+    -- count up records grouped by patkey and pat_gender
+    SELECT patkey, pat_gender, 
+    CASE WHEN ((pat_gender IS NULL) OR pat_gender = '') THEN 0 
+         ELSE (COUNT(*) OVER (PARTITION BY patkey, pat_gender)) END AS record_count
+    FROM  cdm.concept
+  ) a
+) b ORDER BY patkey
+
+```
+
+
+
+```{sql connection=con}
+drop procedure dbo.test2
+```
+
+
+```{sql connection=con}
+CREATE PROCEDURE dbo.TEST2 @column_name varchar(30) AS 
+SELECT concept_id, concept_name, domain_id, vocabulary_id,
+  case @column_name
+    when 'concept_name' THEN concept_name
+    when 'domain_id' then domain_id
+    when 'vocabulary_id' then vocabulary_id 
+    else NULL
+  end as selected_column
+  FROM cdm.concept where concept_id = 0 
+
+```
+
+```{sql connection=con}
+exec dbo.test2 @column_name = 'concept_name'
+```
+
+
+```{sql connection=con}
+
+SELECT
+  mhdo_member_id as person_id,
+  case when gender = 'F' then 8532 
+    when gender = 'M' then 8507
+    end as gender_concept_id,
+  birthyear as year_of_birth,	
+  NULL as month_of_birth,
+  NULL as day_of_birth,
+  NULL as birth_datetime,
+  NULL as death_datetime,
+  NULL as race_concept_id,
+  NULL as ethnicity_concept_id,	
+  patzip as location_id,
+   --place of residency for the person in the location table.
+  pcp_npi as provider_id,	
+  -- primary care provider the person is seeing in the provider table.
+  pcp_location as care_site_id,	-- site of primary care in the care_site table, locagtion associated with PCP?
+  NULL as person_source_value,	-- mhdo_member_id or original 
+  gender as gender_source_value,	
+  0 as gender_source_concept_id,	-- not sure what this is -- Yes	Integer	A foreign key to the gender concept that refers to the code used in the source.
+  NULL as race_source_value,	
+  NULL as race_source_concept_id,	-- ???? Yes	Integer	A foreign key to the race concept that refers to the code used in the source.
+  NULL as ethnicity_source_value,	
+  NULL as ethnicity_source_concept_id	-- ???? Yes	Integer	A foreign key to the ethnicity concept that refers to the code used in the source.
+  from
+    person_gender a join person_birthear b on a.patkey = b.patkey
+    join person_pcp c on a.patkey = c.patkey
+    
+  
+```
+  
+  

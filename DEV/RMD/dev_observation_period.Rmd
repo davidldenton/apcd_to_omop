@@ -1,0 +1,121 @@
+---
+title: "create observation period table"
+output: html_document
+---
+
+
+  
+# Observation Period
+
+```{sql connection=con}
+
+select
+observation_period_id, -- can this be an auto generated primary key?
+patkey as person_id,
+observation_period_start_date,
+observation_period_end_date,
+44814722 as period_type_concept_id -- concept for "Period while enrolled in insurance"
+
+```
+
+
+
+
+```{r}
+tst <- tibble(
+  patkey = c(rep(1,10), rep(2, 10)),
+  month = c(c(1, 1, 2, 2:4, 1:4),   c(1, 3, 12, 2:4, 1:4)),
+  year = c(rep(2015, 6), rep(2017, 4), rep(2015, 3), rep(2016, 7))
+)
+
+copy_to(con, tst)
+```
+
+```{r}
+tst <- tbl(con, "##tst")
+tst
+
+```
+```{sql connection=con}
+SELECT patkey, month, year, sum(month) OVER (ORDER BY PATKEY ROWS UNBOUNDED PRECEDING) AS a FROM ##tst
+
+```
+
+
+```{r}
+tst %>% 
+  mutate(a = cumsum(month))
+```
+
+creation of observation periods from monthly eligibility records
+```{r}
+
+tst %>% 
+  mutate(mon = (year - 2015)*12 + month) %>% 
+  group_by(patkey) %>% 
+  mutate(lag_mon = order_by(mon, lag(mon))) %>% 
+  mutate(new_period = ifelse(is.na(lag_mon) | mon - lag_mon > 1, 1, 0)) %>% 
+  mutate(period_id = order_by(mon, cumsum(new_period))) %>% 
+  group_by(patkey, period_id) %>% 
+  mutate(period_start = min(mon), period_end = max(mon)) %>% 
+  select(-year, -month) %>% 
+  ungroup() %>% 
+  distinct(patkey, period_start, period_end) %>% show_query()
+
+```
+
+
+```{sql connection=con}
+  SELECT patkey, month, year, (year - 2015)*12 + month AS timepoint
+        FROM ##tst
+```
+```{sql connection=con}
+  SELECT patkey, month, year, timepoint, LAG(timepoint, 1, NULL) OVER (PARTITION BY patkey ORDER BY timepoint) AS lag_timepoint
+      FROM (
+        -- create timepoint
+        SELECT patkey, month, year, (year - 2015)*12 + month AS timepoint
+        FROM ##tst
+      ) timepoint
+
+```
+
+
+```{sql connection=con}
+
+-- add period_start and period_end
+SELECT patkey, month, year, timepoint, lag_timepoint, new_period_flag, period_id,
+min(timepoint) OVER (PARTITION BY patkey, period_id) AS period_start, 
+max(timepoint) OVER (PARTITION BY patkey, period_id) AS period_end
+INTO ##tmp_obs_period
+FROM (
+  -- add period_id
+  SELECT patkey, month, year, timepoint, lag_timepoint, new_period_flag,
+    sum(new_period_flag) OVER (PARTITION BY patkey ORDER BY timepoint ROWS UNBOUNDED PRECEDING) AS period_id
+  FROM (
+    -- add new_period_flag
+    SELECT patkey, month, year, timepoint, lag_timepoint, 
+    CASE WHEN ((lag_timepoint IS NULL) OR timepoint - lag_timepoint > 1) THEN (1) ELSE (0) END AS new_period_flag
+    FROM (
+      -- add lag timepoint
+      SELECT patkey, month, year, timepoint, 
+        LAG(timepoint, 1, NULL) OVER (PARTITION BY patkey ORDER BY timepoint) AS lag_timepoint
+      FROM (
+        -- create timepoint
+        SELECT patkey, month, year, (year - 2015)*12 + month AS timepoint
+        FROM ##tst
+      ) timepoint
+    ) lag_timepoint
+  ) new_period_flag
+) period_id
+
+
+
+
+
+```
+
+```{sql connection=con}
+
+select distinct patkey, period_start, period_end from ##tmp_obs_period
+
+```
