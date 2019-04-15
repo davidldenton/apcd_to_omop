@@ -101,7 +101,7 @@ FROM (
         LAG(timepoint, 1, NULL) OVER (PARTITION BY patkey ORDER BY timepoint) AS lag_timepoint
       FROM (
         -- create timepoint
-        SELECT patkey, month, year, (year - 2015)*12 + month AS timepoint
+        SELECT patkey, month, year, (year - 2015)*12 + month - 1 AS timepoint -- timepoint needs to start counting at zero from reference month
         FROM ##tst
       ) timepoint
     ) lag_timepoint
@@ -113,6 +113,25 @@ FROM (
 
 
 ```
+
+
+```{sql connection=con}
+with intermediate as(
+select distinct patkey, period_start, period_end, 
+  cast(period_start as int) % 12 + 1 as month_start,  -- remainder after division by 12 where zero is mapped to 12
+  floor(period_start/12) + 2015 as year_start,
+  cast(period_end as int) % 12 + 1 as month_end,  -- remainder after division by 12 where zero is mapped to 12
+  floor(period_end/12) + 2015 as year_end
+from ##tmp_obs_period
+)
+
+select patkey, month_start, year_start, month_end, year_end,
+DATEFROMPARTS(year_start, month_start, 1) as period_start,
+EOMONTH(DATEFROMPARTS(year_end, month_end, 1), 0) as period_end
+from intermediate
+
+```
+
 
 ```{sql connection=con}
 
