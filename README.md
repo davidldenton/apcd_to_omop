@@ -27,3 +27,12 @@ This folder contains the DDL for the OMOP CDM on SQL Server.
 11. Execute the script `omop_cdm_constraints_data.sql` to add foreign key constraints to the data tables.
 
 12. Execute the script `omop_cdm_results.txt` to create the results schema, tables, and fields, as well as the keys and indexes.
+
+
+### Links to source location data required for license
+
+[https://simplemaps.com/data/us-cities](https://simplemaps.com/data/us-cities)
+
+[https://simplemaps.com/data/us-zips](https://simplemaps.com/data/us-zips)
+
+
