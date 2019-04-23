@@ -241,7 +241,7 @@ CREATE TABLE cdm.person
 --HINT DISTRIBUTE_ON_KEY(person_id)
 CREATE TABLE cdm.observation_period
 (
-  observation_period_id				  BIGINT		NOT NULL ,
+  observation_period_id				  BIGINT		IDENTITY	NOT NULL ,
   person_id							  BIGINT		NOT NULL ,
   observation_period_start_date		  DATE		  	NOT NULL ,
   observation_period_end_date		  DATE		  	NOT NULL ,
